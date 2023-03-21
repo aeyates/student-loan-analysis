@@ -1,0 +1,35 @@
+---
+title: "Student Loan Relief Report"
+author: "Amy Yates"
+bibliography: references.bib
+csl: nature.csl
+link-citations: true
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Background
+
+As the cost of higher education continues to grow, student debt in America rose to $1.6 trillion in 2022, impacting 45 million individuals and their families [@koeze_russell_2022]. In August of 2022, the Biden Administration announced a debt relief program [@student_aid_gov] of $10000 for borrowers below a certain income level and $20000 for borrowers that had received Pell Grants. This initiative is currently blocked by courts, and monthly payments are paused until August of 2023 if litigation does not resolve sooner.
+
+This report will explore higher education data to try and answer the following questions:
+
+1. What are the characteristics of borrowers (demographics, income level, institutions, post-graduate level)?
+1. Under the proposed plan, which borrowers are most positively impacted?
+1. Is the income level cap of $125,000 per individual/$250,000 per family backed by data?
+1. Can we identify recommendations for changes to the plan?
+
+Some of the data available that may be explored is listed below:
+
+* https://nces.ed.gov/ipeds/datacenter/DataFiles.aspx?year=2001
+* https://github.com/rfordatascience/tidytuesday/tree/master/data/2019/2019-11-26
+* https://github.com/rfordatascience/tidytuesday/tree/master/data/2022/2022-08-30
+* https://tuitiontracker.org/
+* https://data.ed.gov/dataset/federal-student-loan-portfolio/resources
+
+# References
+::: {#refs}
+:::
