@@ -320,23 +320,17 @@ overflow-y: auto;
 border: 1px solid #ddd;
 border-radius: 4px;
 }
-.tabset-dropdown > .nav-tabs > li.active:before {
-content: "";
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+content: "\e259";
 font-family: 'Glyphicons Halflings';
 display: inline-block;
 padding: 10px;
 border-right: 1px solid #ddd;
 }
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
-content: "";
-border: none;
-}
-.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
-content: "";
+content: "\e258";
 font-family: 'Glyphicons Halflings';
-display: inline-block;
-padding: 10px;
-border-right: 1px solid #ddd;
+border: none;
 }
 .tabset-dropdown > .nav-tabs > li.active {
 display: block;
@@ -409,10 +403,72 @@ family backed by data?</li>
 <ul>
 <li><a href="https://nces.ed.gov/ipeds/datacenter/DataFiles.aspx?year=2001" class="uri">https://nces.ed.gov/ipeds/datacenter/DataFiles.aspx?year=2001</a></li>
 <li><a href="https://github.com/rfordatascience/tidytuesday/tree/master/data/2019/2019-11-26" class="uri">https://github.com/rfordatascience/tidytuesday/tree/master/data/2019/2019-11-26</a></li>
-<li><a href="https://github.com/rfordatascience/tidytuesday/tree/master/data/2022/2022-08-30" class="uri">https://github.com/rfordatascience/tidytuesday/tree/master/data/2022/2022-08-30</a></li>
 <li><a href="https://tuitiontracker.org/" class="uri">https://tuitiontracker.org/</a></li>
 <li><a href="https://data.ed.gov/dataset/federal-student-loan-portfolio/resources" class="uri">https://data.ed.gov/dataset/federal-student-loan-portfolio/resources</a></li>
 </ul>
+</div>
+<div id="pell-grant-data" class="section level1">
+<h1>Pell Grant Data</h1>
+<p><em>Source: <a href="https://github.com/rfordatascience/tidytuesday/tree/master/data/2022/2022-08-30" class="uri">https://github.com/rfordatascience/tidytuesday/tree/master/data/2022/2022-08-30</a></em></p>
+<p>Pell Grants are provided to students that meet certain qualifications
+for financial need. These are grants, not loans, and do not require
+repayment. These grants typically make only a small dent in the overall
+cost, so most students accepting Pell Grants also take out loans.
+Qualification for these grants serve as an indicator that these students
+lack the generational wealth that many college-bound individuals enjoy
+and that loan forgiveness would make a greater impact for them.</p>
+<p>The average grant amount can vary widely by institution and by state.
+Since the federal grant program does not consider institutional cost, it
+is expected that income level of applicants is the main contributor to
+the variance. However, different institutions may offer better support
+for accessing these grants.</p>
+<p>Below is a summary of the 2017 averages per state, ordered from the
+largest total per recipient down.</p>
+<pre><code>## # A tibble: 59 × 5
+##    state  year award_total recipient_total total_per_recipient
+##    &lt;chr&gt; &lt;dbl&gt;       &lt;dbl&gt;           &lt;dbl&gt;               &lt;dbl&gt;
+##  1 PR     2017   814593716          178098               4574.
+##  2 AS     2017     4181457             929               4501.
+##  3 MS     2017   341473115           75904               4499.
+##  4 VI     2017     4418901            1004               4401.
+##  5 NY     2017  1985470926          452331               4389.
+##  6 MP     2017     4261741             980               4349.
+##  7 FM     2017     9945871            2320               4287.
+##  8 MH     2017     5223129            1220               4281.
+##  9 AR     2017   270693698           64697               4184.
+## 10 NJ     2017   666368206          160110               4162.
+## # ℹ 49 more rows</code></pre>
+<p>Six of the top ten states are in fact territories of the U.S. with
+Puerto Rico topping the list. This strengthens the supposition that
+populations with lower income levels are the primary contributor to
+larger individual grants. The top ten also includes New York and New
+Jersey, however, states that were in the top 1/3 of incomes in that same
+year.</p>
+<p>To understand why that might be, let’s take a look at the New York
+grants at an institutional level, ordering from high to low.</p>
+<pre><code>## # A tibble: 328 × 4
+##    state name                         institution_per_reci…¹ total_per_recipient
+##    &lt;chr&gt; &lt;chr&gt;                                         &lt;dbl&gt;               &lt;dbl&gt;
+##  1 NY    Elyon College                                 8773.               4389.
+##  2 NY    Be&#39;er Yaakov Talmudic Semin…                  8219.               4389.
+##  3 NY    Yeshiva Shaar Ephraim                         8073.               4389.
+##  4 NY    United Talmudical Seminary                    7678.               4389.
+##  5 NY    Mesivta Eastern Pkwy Rabbin…                  7470.               4389.
+##  6 NY    Rabbinical College of Long …                  7218.               4389.
+##  7 NY    Mechon L&#39;hoyroa                               6918.               4389.
+##  8 NY    Bet Medrash Gadol Ateret To…                  6914.               4389.
+##  9 NY    Beth Hatalmud Rabbinical Clg                  6673.               4389.
+## 10 NY    Ohr Hameir Theological Semi…                  6559.               4389.
+## # ℹ 318 more rows
+## # ℹ abbreviated name: ¹​institution_per_recipient</code></pre>
+<p>The maximum Pell Grant amount that could be given to individuals in
+2017 was $5920, yet the top 20 schools have averages far greater than
+that number. This could be reporting issues, but it is also possible to
+receive more than 100% of the maximum grant in a given year as long as
+the average over the years balances out to less than the maximum. This
+may add support for our other hypothesis - that some institutions are
+simply better at championing their students and maximizing the
+benefit.</p>
 </div>
 <div id="references" class="section level1">
 <h1>References</h1>
