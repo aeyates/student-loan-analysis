@@ -12,6 +12,8 @@ knitr::opts_chunk$set(echo = FALSE, message=FALSE)
 library(tidyverse)
 library(janitor)
 library(skimr)
+library(gt)
+library(hrbrthemes)
 ```
 
 # Background
@@ -50,22 +52,199 @@ total_per_recipient <- pell %>%
   summarise(award_total = sum(award), recipient_total = sum(recipient), total_per_recipient = award_total/recipient_total) %>% 
   ungroup() %>%  
   arrange(desc(total_per_recipient))
-total_per_recipient
+total_per_recipient |> head(10) |> gt() |>
+  tab_header(
+    title = "Top Ten Per Capita Pell Grant States",
+    subtitle = "2017"
+  ) |>
+  fmt_currency(columns = c(award_total, total_per_recipient), decimals=0)
 ```
 Six of the top ten states are in fact territories of the U.S. with Puerto Rico topping the list. This strengthens the supposition that populations with lower income levels are the primary contributor to larger individual grants. The top ten also includes New York and New Jersey, however, states that were in the top 1/3 of incomes in that same year.
 
 To understand why that might be, let's take a look at the New York grants at an institutional level, ordering from high to low.
 
 ```{r}
-inner_join(pell %>% 
-    filter(state == 'NY') %>% 
-    filter(year==2017) %>% 
-    mutate(institution_per_recipient = award/recipient) %>% 
-    select(state, name, institution_per_recipient), 
-  total_per_recipient %>% select(state, total_per_recipient)
-  ) %>% arrange(desc(institution_per_recipient))
+ny_average = round(total_per_recipient %>% filter(state == 'NY') %>% select(total_per_recipient), 0)
+ny_recipients <- pell %>% 
+  filter(state == 'NY', year == 2017) %>% 
+  mutate(institution_per_recipient = award/recipient) %>% 
+  select(state, name, institution_per_recipient) %>% 
+  arrange(desc(institution_per_recipient))
+ny_recipients |> head(10) |> gt() |>
+  tab_header(
+    title = "Top Ten Per Capita Pell Grant Institutions in New York (2017)",
+    subtitle = glue::glue('NY Recipient Average ${ny_average}')
+  ) |>
+  fmt_currency(decimals=0) |>
+  cols_label(state = md("**State**"), 
+             name = md("**Name**"),
+             institution_per_recipient = md("**Institution Per Recipient**"))
 ```
 The maximum Pell Grant amount that could be given to individuals in 2017 was $5920, yet the top 20 schools have averages far greater than that number. This could be reporting issues, but it is also possible to receive more than 100% of the maximum grant in a given year as long as the average over the years balances out to less than the maximum. This may add support for our other hypothesis - that some institutions are simply better at championing their students and maximizing the benefit.
+
+# The Cost of Higher Education
+
+Let's next look at the cost of college, by using the website Tuition Tracker [@tuition_tracker] which provides tuition information for over 3000 institutions. Let's start by examining the published sticker price of 4-year institutions and looking only at the 2017-2018 academic year as we did for Pell Grants. For now, we'll focus on students living on campus.
+
+```{r}
+cost_attendance <- read_csv("raw-data/cost-attendance.csv") %>% clean_names()
+cost_2017 <- cost_attendance %>% 
+  select(institution_name, sector_of_institution_hd2021, contains("2017_18")) %>% 
+  filter(sector_of_institution_hd2021 %in% c(1,2)) %>% 
+  mutate(sector = ifelse(sector_of_institution_hd2021 == 1, 'Public', 'Private')) %>% 
+  rename(on_campus = total_price_for_in_state_students_living_on_campus_2017_18_drvic2017,
+         off_campus_alone = total_price_for_in_state_students_living_off_campus_not_with_family_2017_18_drvic2017,
+         off_campus_family = total_price_for_in_state_students_living_off_campus_with_family_2017_18_drvic2017)
+```
+
+```{r}
+ggplot(data = cost_2017, 
+       mapping = aes(
+         x=institution_name,
+         y=on_campus,
+         color = sector
+         )) +
+  geom_point(na.rm = TRUE) +
+  scale_x_discrete(labels = NULL, breaks = NULL) +
+  scale_y_continuous(limits = c(0,80000), breaks = seq(0, 80000, by = 20000)) +
+  scale_color_discrete(name = "Sector") +
+  labs(
+    title = "2017 Tuition + Room and Board Sticker Price",
+    x="Institutions",
+    y=""
+    ) +
+  theme_light()
+```
+
+As expected, there is a huge disparity in the published price of public institutions versus private, with the private range being much larger. However, many private institutions claim to offer better financial assistance, with the majority of their scholars receiving some form of aid. Let's next looks at the net price.
+
+```{r}
+net_price <- read_csv("raw-data/net-price.csv") %>% clean_names()
+net_cost_2017 <- net_price %>% 
+  select(institution_name, sector_of_institution_hd2021, contains("2017_18")) %>% 
+  filter(sector_of_institution_hd2021 %in% c(1,2)) %>% 
+  mutate(sector = ifelse(sector_of_institution_hd2021 == 1, 'Public', 'Private')) %>% 
+  rename(avg_net_price = average_net_price_students_awarded_grant_or_scholarship_aid_2017_18_sfa1718_rv_22,
+         avg_net_price_0_30000 = average_net_price_income_0_30_000_students_awarded_title_iv_federal_financial_aid_2017_18_sfa1718_rv_23,
+         avg_net_price_30001_48000 = average_net_price_income_30_001_48_000_students_awarded_title_iv_federal_financial_aid_2017_18_sfa1718_rv_24,
+         avg_net_price_48001_75000 = average_net_price_income_48_001_75_000_students_awarded_title_iv_federal_financial_aid_2017_18_sfa1718_rv_25,
+         avg_net_price_75001_110000 = average_net_price_income_75_001_110_000_students_awarded_title_iv_federal_financial_aid_2017_18_sfa1718_rv_26,
+         avg_net_price_over_110000 = average_net_price_income_over_110_000_students_awarded_title_iv_federal_financial_aid_2017_18_sfa1718_rv_27) %>% 
+  mutate(
+    avg_net_price = ifelse(is.na(avg_net_price), average_net_price_students_awarded_grant_or_scholarship_aid_2017_18_sfa1718_rv_82, avg_net_price),
+    avg_net_price_0_30000 = ifelse(is.na(avg_net_price_0_30000),
+        average_net_price_income_0_30_000_students_awarded_title_iv_federal_financial_aid_2017_18_sfa1718_rv_83, avg_net_price_0_30000),
+    avg_net_price_30001_48000 = ifelse(is.na(avg_net_price_30001_48000), 
+        average_net_price_income_30_001_48_000_students_awarded_title_iv_federal_financial_aid_2017_18_sfa1718_rv_86, avg_net_price_30001_48000),
+    avg_net_price_48001_75000 = ifelse(is.na(avg_net_price_48001_75000), 
+        average_net_price_income_48_001_75_000_students_awarded_title_iv_federal_financial_aid_2017_18_sfa1718_rv_87, avg_net_price_48001_75000),
+    avg_net_price_75001_110000 = ifelse(is.na(avg_net_price_75001_110000), 
+        average_net_price_income_75_001_110_000_students_awarded_title_iv_federal_financial_aid_2017_18_sfa1718_rv_85, avg_net_price_75001_110000),
+    avg_net_price_over_110000 = ifelse(is.na(avg_net_price_over_110000), 
+        average_net_price_income_over_110_000_students_awarded_title_iv_federal_financial_aid_2017_18_sfa1718_rv_84, avg_net_price_over_110000)) %>% 
+  select(institution_name, sector, contains("avg_net"))
+
+```
+
+```{r}
+ggplot(data = net_cost_2017, 
+       mapping = aes(
+         x=institution_name,
+         y=avg_net_price,
+         color = sector
+         )) +
+  geom_point(na.rm = TRUE) +
+  scale_x_discrete(labels = NULL, breaks = NULL) +
+  scale_y_continuous(limits = c(0,80000), breaks = seq(0, 80000, by = 20000)) +
+  scale_color_discrete(name = "Sector") +
+  labs(
+    title = "2017 Net Price",
+    x="Institutions",
+    y=""
+    ) +
+  theme_light()
+```
+
+It appears that private institutions do start to narrow the gap when it comes to providing funding overall. How do institutions stack up when it comes to income levels? We'll rearrange the data, so we can facet it and plots by income level.
+
+```{r}
+net_cost_facets <- net_cost_2017 %>%
+  pivot_longer(cols=c(avg_net_price_0_30000, avg_net_price_30001_48000, avg_net_price_48001_75000, avg_net_price_75001_110000, avg_net_price_over_110000))
+```
+
+```{r}
+ggplot(data = net_cost_facets, 
+       mapping = aes(
+         x=institution_name,
+         y=value,
+         color = sector
+         )) +
+  geom_point(na.rm = TRUE) +
+  scale_x_discrete(labels = NULL, breaks = NULL) +
+  scale_y_continuous(limits = c(0,80000), breaks = seq(0, 80000, by = 20000)) +
+  scale_color_discrete(name = "Sector") +
+  labs(
+    title = "2017 Net Price",
+    x="Institutions",
+    y=""
+    ) +
+  theme_light() + 
+  facet_wrap(~name, ncol = 3)
+```
+
+The scatterplot makes it difficult to discern any real differences in income brackets. Let's instead look at the overall averages.
+
+```{r}
+# Collect the overall net and sticker price averages for private versue public
+overall_averages <- inner_join(net_cost_facets %>% group_by(name, sector) %>% summarise(avg_net = mean(value, na.rm = TRUE)),
+                               cost_2017 %>% group_by(sector) %>% summarise(avg_sticker_price = mean(on_campus, na.rm = TRUE)))
+ggplot(data = overall_averages, 
+       mapping = aes(
+         x=sector,
+         y=avg_net,
+         fill=sector
+         )) +
+  geom_col() +
+  geom_text(aes(label = round(avg_net, 0)),
+            vjust = 1.5,
+            color = "white") +
+  scale_x_discrete(labels = NULL, breaks = NULL) +
+  scale_y_continuous(limits = c(0,40000), breaks = seq(0, 40000, by = 10000)) +
+  labs(
+    title = "2017 Net Price",
+    x="",
+    y=""
+    ) +
+  theme_light() +
+  facet_wrap(~name, ncol = 3)
+```
+
+And finally, let's reintroduce the sticker price to the graph to get a sense of what the discount looks like at each income bracket.
+
+```{r}
+averages_pivoted <- overall_averages %>% rename(income_bracket = name) %>% pivot_longer(cols=c(avg_net, avg_sticker_price)) %>% rename(avg_tuition = name)
+
+ggplot(data = averages_pivoted, 
+       mapping = aes(
+         x=sector,
+         y=value,
+         fill= avg_tuition
+         )) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = round(value, 0)),
+            vjust = 1.5,
+            color = "white", position = position_dodge(width = 1)) +
+  scale_y_continuous(limits = c(0,50000), breaks = seq(0, 50000, by = 10000)) +
+  scale_fill_discrete(name = "Tuition") +
+  labs(
+    title = "2017 Price Comparison",
+    x="",
+    y=""
+    ) +
+  theme_light() +
+  facet_wrap(~income_bracket, ncol = 2)
+```
+
 
 # References
 <div id="refs"></div>
