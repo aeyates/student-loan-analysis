@@ -3,8 +3,6 @@
 # Import libraries --------------------------------------------------------
 library(tidyverse)
 library(janitor)
-library(skimr)
-library(gt)
 library(snakecase)
 
 
