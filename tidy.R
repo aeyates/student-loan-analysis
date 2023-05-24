@@ -53,3 +53,28 @@ cost_attendance_summary %>%
         panel.grid.major = element_line(colour = "lightgrey", linetype = 3)) +
   facet_wrap(~sector, ncol = 2)
 
+# Line Plot
+cost_attendance_summary %>%
+  rename(sector = sector_of_institution_hd2021) %>% 
+  filter(sector %in% c(1,2)) %>% 
+  mutate(sector = ifelse(sector == 1, 'Public', 'Private')) %>%
+  mutate(student_category = factor(student_category, levels = c("Off Campus With Family", "Off Campus Not With Family", "On Campus"))) %>% 
+  ggplot(aes(x=year,
+             y=mean_cost_per_category_by_sector_and_year,
+             group = student_category,
+             color = student_category)) +
+  geom_line() + 
+  scale_x_discrete(guide = guide_axis(angle = 90)) +
+  scale_y_continuous(limits = c(0,50000), breaks = seq(0, 50000, by = 10000)) + 
+  scale_color_brewer(name = "Student Category", palette = "Set1") +
+  labs(
+    title = "Tuition Comparison By Year and Student Category",
+    x="",
+    y="Mean Cost"
+  ) +
+  theme(legend.position="left",
+        legend.key = element_rect(fill = "transparent", colour = "transparent"),
+        panel.background = element_rect(fill = "white", colour="grey"),
+        panel.grid.major = element_line(colour = "lightgrey", linetype = 3)) +
+  facet_wrap(~sector)
+  
