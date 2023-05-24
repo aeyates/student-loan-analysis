@@ -1,0 +1,105 @@
+---
+title: "Net Cost of College"
+author: "Amy Yates"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+Each year, colleges report their overall average net cost after financial aid and also provide a breakdown by income level of the scholar's family. Between 2011 and 2020, the net cost increased overall, but middle income families saw the smallest jumps and in some cases their net cost decreased. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE, dev="ragg_png")
+# knitr::opts_chunk$set(fig.width=14)
+```
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(scales)
+library(hrbrthemes)
+library(ftplottools)
+library(ggtext)
+library(ragg)
+library(systemfonts)
+library(ggalt)
+library(patchwork)
+
+net_cost_2011_2020_by_income <- read_rds("data/net_cost_2011_2020_by_income.rds")
+net_cost_2011_2020_overall <- read_rds("data/net_cost_2011_2020_overall.rds")
+```
+
+```{r data_prep}
+net_price_by_income <- net_cost_2011_2020_by_income %>% 
+  group_by(sector, income, year) %>% 
+  summarize(average_net_cost = mean(value)) %>% 
+  ungroup() %>% 
+  pivot_wider(id_cols = c(sector, income), names_from = year, values_from = average_net_cost) %>%
+  mutate(change = (`2020_21` - `2011_12`)) %>%
+  mutate(ylabel = case_when(
+    income == '0_30_000' ~ "<=30K",
+    income == '30_001_48_000' ~ "30K-48K",
+    income == '48_001_75_000' ~ "48K-75K",
+    income == '75_001_110_000' ~ "75K-110K",
+    income == 'over_110_000' ~ ">110K"
+  )) %>%
+  mutate(row = row_number()) %>% 
+  mutate(ylabel = fct_reorder(ylabel, row))
+
+net_price_overall <- net_cost_2011_2020_overall %>% 
+  group_by(sector, year) %>% 
+  summarize(average_net_cost = mean(value)) %>% 
+  ungroup() %>% 
+  pivot_wider(id_cols = c(sector), names_from = year, values_from = average_net_cost) %>% 
+  mutate(change = (`2020_21` - `2011_12`))
+
+private_overall <- net_price_overall %>% filter(sector == 'Private') %>% pull(change)
+public_overall <- net_price_overall %>% filter(sector == 'Public') %>% pull(change)
+```
+
+```{r plot_functions}
+theme_he <- function() {
+  theme_light(base_family = "Trebuchet MS") +
+  theme(axis.title.x = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+}
+
+dumbbell_plot_with_segment <- function(data, xsegment) {
+  ggplot(data, aes(x = 0, xend = change, y=ylabel, yend = ylabel)) +
+  geom_dumbbell(colour="#a3c4dc", inherit.aes = TRUE, size_x = 3, size_xend = 3, colour_xend="#0e668b", 
+                         dot_guide=TRUE, dot_guide_size=0.15) +
+  geom_segment(aes(x=xsegment, xend=xsegment, y=1, yend=5), color="darkgrey", linetype="dashed") +
+  scale_x_continuous(limits=c(-250,3000), labels=dollar_format())
+}
+
+annotate_overall_segment <- function(x) {
+  annotate("text", x=x, y=2.5, label="Overall\nAverage\nChange", size=3, family = "Trebuchet MS")
+}
+```
+
+```{r plot}
+# To ask: 
+# - How do we use data elements for x or y tick labels
+# - How do I get annotations to the right of the plot (outside of it)
+# - How to put axis title on one side and axis labels on the other
+
+public <- net_price_by_income %>%
+  filter(sector == 'Public') %>% 
+  dumbbell_plot_with_segment(public_overall) +
+  labs(title = "Change in Net Cost of College by Income from 2011-2020", subtitle="The highest and lowest income levels have seen the largest increases.") +
+  theme_he() +
+  ylab("Public") +
+  annotate_overall_segment(1800)
+
+private <- net_price_by_income %>%
+  filter(sector == 'Private') %>% 
+  dumbbell_plot_with_segment(private_overall) +
+  theme_he() +
+  ylab("Private") +
+  annotate_overall_segment(2700)
+
+public / private
+
+```
+

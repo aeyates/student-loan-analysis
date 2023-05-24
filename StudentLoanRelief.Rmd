@@ -165,7 +165,7 @@ ggplot(data = net_cost_2017,
   theme_light()
 ```
 
-It appears that private institutions do start to narrow the gap when it comes to providing funding overall. How do institutions stack up when it comes to income levels? We'll rearrange the data, so we can facet it and plots by income level.
+It appears that private institutions do start to narrow the gap when it comes to providing funding overall. How do institutions stack up when it comes to income levels? We'll rearrange the data, so we can facet it and plot by income level.
 
 ```{r}
 net_cost_facets <- net_cost_2017 %>%
