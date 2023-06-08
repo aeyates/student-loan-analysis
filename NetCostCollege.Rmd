@@ -62,42 +62,50 @@ theme_he <- function() {
   theme(axis.title.x = element_blank(),
         panel.grid.minor = element_blank(),
         plot.title = element_text(hjust = 0.5),
-        plot.subtitle = element_text(hjust = 0.5))
+        plot.subtitle = element_text(hjust = 0.5),
+        axis.ticks.y.right = element_blank(),
+        axis.text.y.right = element_blank(),
+        axis.title.y.left = element_blank(),
+        axis.title.y.right = element_text(angle=0, vjust=0.5))
 }
 
-dumbbell_plot_with_segment <- function(data, xsegment) {
-  ggplot(data, aes(x = 0, xend = change, y=ylabel, yend = ylabel)) +
+dumbbell_plot_with_segment <- function(data, xsegment, ystart, yend) {
+  ggplot(data, aes(x = 0, xend = change, y=row, yend = row)) +
   geom_dumbbell(colour="#a3c4dc", inherit.aes = TRUE, size_x = 3, size_xend = 3, colour_xend="#0e668b", 
                          dot_guide=TRUE, dot_guide_size=0.15) +
-  geom_segment(aes(x=xsegment, xend=xsegment, y=1, yend=5), color="darkgrey", linetype="dashed") +
-  scale_x_continuous(limits=c(-250,3000), labels=dollar_format())
+  geom_segment(aes(x=xsegment, xend=xsegment, y=ystart, yend=yend), color="darkgrey", linetype="dashed") +
+  scale_x_continuous(limits=c(-250,3000), labels=dollar_format()) +
+  scale_y_continuous(position = "right",
+                   sec.axis = dup_axis(),
+                   labels = data$ylabel)
 }
 
-annotate_overall_segment <- function(x) {
-  annotate("text", x=x, y=2.5, label="Overall\nAverage\nChange", size=3, family = "Trebuchet MS")
+annotate_overall_segment <- function(x, y) {
+  annotate("text", x=x, y=y, label="Overall\nAverage\nChange", size=3, family = "Trebuchet MS")
 }
 ```
 
 ```{r plot}
 # To ask: 
-# - How do we use data elements for x or y tick labels
+# - How do we use data elements for x or y tick labels (Answer: See data$ylabel in function)
 # - How do I get annotations to the right of the plot (outside of it)
-# - How to put axis title on one side and axis labels on the other
+# - How to put axis title on one side and axis labels on the other (Answer: Use row number for y 
+# so it's a continuous scale, then add a secondary duplicate axis, and turn on and off things with themes.)
 
 public <- net_price_by_income %>%
   filter(sector == 'Public') %>% 
-  dumbbell_plot_with_segment(public_overall) +
+  dumbbell_plot_with_segment(public_overall, 6, 10) +
   labs(title = "Change in Net Cost of College by Income from 2011-2020", subtitle="The highest and lowest income levels have seen the largest increases.") +
   theme_he() +
   ylab("Public") +
-  annotate_overall_segment(1800)
+  annotate_overall_segment(1800, 8)
 
 private <- net_price_by_income %>%
   filter(sector == 'Private') %>% 
-  dumbbell_plot_with_segment(private_overall) +
+  dumbbell_plot_with_segment(private_overall, 1, 5) +
   theme_he() +
   ylab("Private") +
-  annotate_overall_segment(2700)
+  annotate_overall_segment(2700, 2.5)
 
 public / private
 
